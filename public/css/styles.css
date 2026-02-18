@@ -1,0 +1,623 @@
+/* ============================================================
+   Base & Reset
+   ============================================================ */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --indigo-50:  #eef2ff;
+    --indigo-100: #e0e7ff;
+    --indigo-200: #c7d2fe;
+    --indigo-400: #818cf8;
+    --indigo-500: #6366f1;
+    --indigo-600: #4f46e5;
+    --indigo-700: #4338ca;
+    --slate-100:  #f1f5f9;
+    --slate-200:  #e2e8f0;
+    --slate-300:  #cbd5e1;
+    --slate-400:  #94a3b8;
+    --slate-500:  #64748b;
+    --slate-700:  #334155;
+    --slate-800:  #1e293b;
+    --white:      #ffffff;
+
+    --row-height:     44px;
+    --header-height:  56px;
+    --timeline-header-height: 48px;
+    --left-panel-width: 560px;
+    --chat-panel-width: 400px;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    color: var(--slate-700);
+    background: var(--slate-100);
+}
+
+/* ============================================================
+   App Shell
+   ============================================================ */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: var(--header-height);
+    background: linear-gradient(135deg, var(--indigo-600) 0%, var(--indigo-500) 100%);
+    color: var(--white);
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+}
+
+.header-project-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.app-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.project-dates {
+    font-size: 12px;
+    opacity: 0.8;
+    font-weight: 400;
+}
+
+.chat-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.chat-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================================
+   Gantt Area
+   ============================================================ */
+.gantt-area {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: var(--white);
+}
+
+/* ============================================================
+   Empty State
+   ============================================================ */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: var(--slate-400);
+    text-align: center;
+    padding: 32px;
+}
+
+.empty-state-icon {
+    color: var(--indigo-200);
+}
+
+.empty-state h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--slate-500);
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: var(--slate-400);
+    max-width: 340px;
+    line-height: 1.6;
+}
+
+.btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--indigo-500);
+    border: none;
+    border-radius: 8px;
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.btn-primary:hover {
+    background: var(--indigo-600);
+    transform: translateY(-1px);
+}
+
+/* ============================================================
+   Gantt Container Layout
+   ============================================================ */
+.gantt-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.gantt-scroll-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* ---- Left Panel ---- */
+.gantt-left {
+    width: var(--left-panel-width);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--slate-200);
+    overflow: hidden;
+    z-index: 2;
+    background: var(--white);
+    box-shadow: 2px 0 6px rgba(0,0,0,0.04);
+}
+
+.gantt-left-header {
+    display: flex;
+    align-items: center;
+    height: var(--timeline-header-height);
+    padding: 0 12px;
+    background: var(--slate-100);
+    border-bottom: 1px solid var(--slate-200);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate-500);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.gantt-left-header .col-id     { width: 48px; }
+.gantt-left-header .col-name   { flex: 1; }
+.gantt-left-header .col-start  { width: 88px; text-align: right; }
+.gantt-left-header .col-end    { width: 88px; text-align: right; }
+.gantt-left-header .col-effort { width: 60px; text-align: right; }
+
+.gantt-left-rows {
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+}
+
+/* ---- Right Panel ---- */
+.gantt-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.gantt-timeline-header {
+    height: var(--timeline-header-height);
+    flex-shrink: 0;
+    overflow: hidden;
+    background: var(--slate-100);
+    border-bottom: 1px solid var(--slate-200);
+    position: relative;
+}
+
+.gantt-timeline-body {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
+}
+
+#gantt-svg {
+    display: block;
+}
+
+/* ============================================================
+   Left Panel Rows
+   ============================================================ */
+.gantt-row {
+    display: flex;
+    align-items: center;
+    height: var(--row-height);
+    padding: 0 12px;
+    border-bottom: 1px solid var(--slate-100);
+    cursor: default;
+    transition: background 0.1s;
+}
+
+.gantt-row:hover {
+    background: var(--indigo-50);
+}
+
+.gantt-row.is-phase {
+    background: var(--indigo-50);
+    font-weight: 600;
+    color: var(--indigo-700);
+    cursor: pointer;
+    border-bottom: 1px solid var(--indigo-100);
+}
+
+.gantt-row.is-phase:hover {
+    background: var(--indigo-100);
+}
+
+.gantt-row.is-task {
+    font-weight: 400;
+    color: var(--slate-700);
+    padding-left: 24px;
+}
+
+.gantt-row.is-collapsed {
+    display: none;
+}
+
+.row-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-right: 4px;
+    transition: transform 0.2s;
+    color: var(--indigo-500);
+    flex-shrink: 0;
+}
+
+.row-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+.row-id {
+    width: 48px;
+    font-size: 12px;
+    color: var(--slate-400);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.row-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.row-start, .row-end {
+    width: 88px;
+    font-size: 12px;
+    color: var(--slate-500);
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.row-effort {
+    width: 60px;
+    font-size: 12px;
+    color: var(--slate-500);
+    text-align: right;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.is-phase .row-effort {
+    color: var(--indigo-600);
+}
+
+/* ============================================================
+   Chat Panel
+   ============================================================ */
+.chat-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.2);
+    z-index: 90;
+}
+
+.chat-overlay.visible {
+    display: block;
+}
+
+.chat-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: var(--chat-panel-width);
+    height: 100vh;
+    background: var(--white);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-panel.open {
+    transform: translateX(0);
+}
+
+.chat-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--slate-200);
+    background: linear-gradient(135deg, var(--indigo-600) 0%, var(--indigo-500) 100%);
+    color: var(--white);
+    flex-shrink: 0;
+}
+
+.chat-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.chat-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    color: var(--white);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.chat-close-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* ---- Messages ---- */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.chat-message {
+    display: flex;
+    flex-direction: column;
+    max-width: 90%;
+}
+
+.chat-message.user {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.chat-message.agent {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.message-bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.chat-message.user .message-bubble {
+    background: var(--indigo-500);
+    color: var(--white);
+    border-bottom-right-radius: 4px;
+}
+
+.chat-message.agent .message-bubble {
+    background: var(--slate-100);
+    color: var(--slate-700);
+    border-bottom-left-radius: 4px;
+}
+
+.message-label {
+    font-size: 11px;
+    color: var(--slate-400);
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+/* Typing indicator */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--slate-100);
+    border-radius: 12px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+}
+
+.typing-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--slate-400);
+    border-radius: 50%;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ---- Load Project button area ---- */
+.chat-load-project {
+    padding: 12px 16px;
+    border-top: 1px solid var(--slate-200);
+    background: var(--indigo-50);
+    flex-shrink: 0;
+}
+
+.btn-load-project {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--indigo-500);
+    border: none;
+    border-radius: 8px;
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.btn-load-project:hover {
+    background: var(--indigo-600);
+    transform: translateY(-1px);
+}
+
+.btn-load-project:active {
+    transform: translateY(0);
+}
+
+/* ---- Chat Input ---- */
+.chat-input-area {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--slate-200);
+    background: var(--white);
+    flex-shrink: 0;
+}
+
+.chat-input {
+    flex: 1;
+    border: 1px solid var(--slate-300);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--slate-700);
+    resize: none;
+    max-height: 120px;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+}
+
+.chat-input:focus {
+    border-color: var(--indigo-400);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.chat-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--indigo-500);
+    border: none;
+    border-radius: 8px;
+    color: var(--white);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.chat-send-btn:hover {
+    background: var(--indigo-600);
+}
+
+.chat-send-btn:disabled {
+    background: var(--slate-300);
+    cursor: not-allowed;
+}
+
+/* ============================================================
+   Gantt SVG Styles (applied via attributes, for reference)
+   ============================================================ */
+
+/* Timeline header (inline SVG text labels) */
+.timeline-week-label {
+    font-size: 11px;
+    fill: var(--slate-500);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Scrollbar styling */
+.gantt-left-rows::-webkit-scrollbar,
+.gantt-timeline-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.gantt-left-rows::-webkit-scrollbar-track,
+.gantt-timeline-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.gantt-left-rows::-webkit-scrollbar-thumb,
+.gantt-timeline-body::-webkit-scrollbar-thumb {
+    background: var(--slate-300);
+    border-radius: 3px;
+}
+
+.gantt-left-rows::-webkit-scrollbar-thumb:hover,
+.gantt-timeline-body::-webkit-scrollbar-thumb:hover {
+    background: var(--slate-400);
+}
+
+/* Gantt JSON code block in chat (hidden visually but kept in DOM) */
+.gantt-json-block {
+    display: none;
+}
