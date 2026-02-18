@@ -174,16 +174,18 @@ class GanttChart {
         const ticks = [];
 
         if (pxPerWeek >= 40) {
-            // Weekly — align to the Monday of the week containing projectStart
+            // Weekly — first Monday on or after projectStart (never before, avoids clamping)
             const cur = new Date(this.projectStart);
-            cur.setDate(cur.getDate() - ((cur.getDay() + 6) % 7));
+            const daysToMon = (8 - cur.getDay()) % 7; // 0 if already Monday
+            cur.setDate(cur.getDate() + daysToMon);
             while (cur <= this.projectEnd) {
                 ticks.push({ date: new Date(cur), label: `${months[cur.getMonth()]} ${cur.getDate()}` });
                 cur.setDate(cur.getDate() + 7);
             }
         } else if (pxPerMonth >= 40) {
-            // Monthly — 1st of each month
+            // Monthly — 1st of each month, starting from the first 1st that is >= projectStart
             const cur = new Date(this.projectStart.getFullYear(), this.projectStart.getMonth(), 1);
+            if (this.projectStart.getDate() > 1) cur.setMonth(cur.getMonth() + 1);
             while (cur <= this.projectEnd) {
                 ticks.push({ date: new Date(cur), label: `${months[cur.getMonth()]} ${cur.getFullYear()}` });
                 cur.setMonth(cur.getMonth() + 1);
