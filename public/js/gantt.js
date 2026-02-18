@@ -6,7 +6,6 @@
  *   - Right: SVG timeline (phase bars, task bars, dependency arrows)
  */
 
-const MIN_DAY_WIDTH = 8;       // never shrink a day below this
 const ROW_HEIGHT = 44;         // px per row
 const TIMELINE_HEADER_H = 48;  // px, must match CSS var
 
@@ -64,7 +63,7 @@ class GanttChart {
         this.totalDays = daysBetween(this.projectStart, this.projectEnd) + 1;
 
         // dayWidth and svgWidth are set dynamically in render() based on container size
-        this.dayWidth = MIN_DAY_WIDTH;
+        this.dayWidth = 1;
         this.svgWidth = 0;
 
         // Flat ordered list of rows for Y-position lookup
@@ -94,10 +93,10 @@ class GanttChart {
     }
 
     render() {
-        // Calculate dayWidth so the SVG fills the right panel exactly (no horizontal scroll)
+        // Always fit the full timeline into the available width — no horizontal scroll
         const rightEl = document.getElementById('gantt-right');
         const availableWidth = rightEl.clientWidth || (window.innerWidth - 560);
-        this.dayWidth = Math.max(MIN_DAY_WIDTH, availableWidth / this.totalDays);
+        this.dayWidth = availableWidth / this.totalDays;
         this.svgWidth = availableWidth;
 
         this.buildRows();
@@ -165,6 +164,50 @@ class GanttChart {
         this.render();
     }
 
+    // ── Adaptive tick dates ──────────────────────────────────────────────────
+    // Returns [{date, label}] at weekly / monthly / quarterly intervals
+    // based on how many pixels each period occupies at the current dayWidth.
+    getTickDates() {
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const pxPerWeek  = this.dayWidth * 7;
+        const pxPerMonth = this.dayWidth * 30;
+        const ticks = [];
+
+        if (pxPerWeek >= 40) {
+            // Weekly — align to the Monday of the week containing projectStart
+            const cur = new Date(this.projectStart);
+            cur.setDate(cur.getDate() - ((cur.getDay() + 6) % 7));
+            while (cur <= this.projectEnd) {
+                ticks.push({ date: new Date(cur), label: `${months[cur.getMonth()]} ${cur.getDate()}` });
+                cur.setDate(cur.getDate() + 7);
+            }
+        } else if (pxPerMonth >= 40) {
+            // Monthly — 1st of each month
+            const cur = new Date(this.projectStart.getFullYear(), this.projectStart.getMonth(), 1);
+            while (cur <= this.projectEnd) {
+                ticks.push({ date: new Date(cur), label: `${months[cur.getMonth()]} ${cur.getFullYear()}` });
+                cur.setMonth(cur.getMonth() + 1);
+            }
+        } else {
+            // Quarterly — Jan/Apr/Jul/Oct 1
+            const qMonths = [0, 3, 6, 9];
+            for (let yr = this.projectStart.getFullYear(); yr <= this.projectEnd.getFullYear(); yr++) {
+                for (const qm of qMonths) {
+                    const d = new Date(yr, qm, 1);
+                    if (d >= this.projectStart && d <= this.projectEnd) {
+                        ticks.push({ date: new Date(d), label: `Q${qm / 3 + 1} ${yr}` });
+                    }
+                }
+            }
+            // Fallback: at least show the project start month
+            if (ticks.length === 0) {
+                ticks.push({ date: new Date(this.projectStart), label: `${months[this.projectStart.getMonth()]} ${this.projectStart.getFullYear()}` });
+            }
+        }
+
+        return ticks;
+    }
+
     // ── Timeline header ──────────────────────────────────────────────────────
     renderTimelineHeader() {
         const headerEl = document.getElementById('gantt-timeline-header');
@@ -173,40 +216,25 @@ class GanttChart {
         const svgH = TIMELINE_HEADER_H;
         const svg = svgEl('svg', { width: this.svgWidth, height: svgH, xmlns: 'http://www.w3.org/2000/svg' });
 
-        // Background
         svg.appendChild(svgEl('rect', { x: 0, y: 0, width: this.svgWidth, height: svgH, fill: '#f1f5f9' }));
 
-        // Generate week starts
-        const cur = new Date(this.projectStart);
-        // Align to Monday of the week containing projectStart
-        const dow = cur.getDay(); // 0=Sun, 1=Mon
-        cur.setDate(cur.getDate() - ((dow + 6) % 7)); // back to Monday
+        for (const tick of this.getTickDates()) {
+            const x = Math.max(0, dateToX(tick.date, this.projectStart, this.dayWidth));
 
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-        while (cur <= this.projectEnd) {
-            const x = Math.max(0, dateToX(cur, this.projectStart, this.dayWidth));
-            const label = `${months[cur.getMonth()]} ${cur.getDate()}`;
-
-            // Vertical grid line
             svg.appendChild(svgEl('line', {
                 x1: x, y1: 0, x2: x, y2: svgH,
                 stroke: '#cbd5e1', 'stroke-width': 1
             }));
 
-            // Week label
             svg.appendChild(svgEl('text', {
                 x: x + 6, y: svgH / 2 + 4,
                 fill: '#64748b',
                 'font-size': '11',
                 'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 'font-weight': '500'
-            })).textContent = label;
-
-            cur.setDate(cur.getDate() + 7);
+            })).textContent = tick.label;
         }
 
-        // Bottom border line
         svg.appendChild(svgEl('line', {
             x1: 0, y1: svgH - 1, x2: this.svgWidth, y2: svgH - 1,
             stroke: '#e2e8f0', 'stroke-width': 1
@@ -231,18 +259,14 @@ class GanttChart {
         defs.appendChild(this.buildArrowMarker());
         svg.appendChild(defs);
 
-        // Grid lines (weekly verticals)
+        // Grid lines — same intervals as timeline header ticks
         const gridG = svgEl('g', { class: 'grid' });
-        const cur = new Date(this.projectStart);
-        const dow = cur.getDay();
-        cur.setDate(cur.getDate() - ((dow + 6) % 7));
-        while (cur <= this.projectEnd) {
-            const x = Math.max(0, dateToX(cur, this.projectStart, this.dayWidth));
+        for (const tick of this.getTickDates()) {
+            const x = Math.max(0, dateToX(tick.date, this.projectStart, this.dayWidth));
             gridG.appendChild(svgEl('line', {
                 x1: x, y1: 0, x2: x, y2: svgHeight,
                 stroke: '#e2e8f0', 'stroke-width': 1
             }));
-            cur.setDate(cur.getDate() + 7);
         }
         svg.appendChild(gridG);
 
