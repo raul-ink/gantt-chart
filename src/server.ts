@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { TLLMEvent } from '@smythos/sdk';
 import { agent } from './agent.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,23 +55,33 @@ app.post('/api/chat', async (req, res) => {
     console.log(`[chat] ${sessionId.slice(0, 8)} → "${message.slice(0, 60)}"`);
 
     try {
-        // Use non-streaming prompt — SmythOS streaming has event ordering issues
-        // in long-lived server contexts; SSE transport still delivers the response.
-        const response = await chat.prompt(message);
+        const stream = await chat.prompt(message).stream();
 
-        clearTimeout(timeout);
-        console.log(`[chat] ${sessionId.slice(0, 8)} response (${String(response).length} chars)`);
+        stream.on(TLLMEvent.Content, (content: string) => {
+            sendEvent({ type: 'content', content });
+        });
 
-        sendEvent({ type: 'content', content: String(response) });
-        sendEvent({ type: 'end' });
-        res.end();
+        stream.on(TLLMEvent.End, () => {
+            clearTimeout(timeout);
+            console.log(`[chat] ${sessionId.slice(0, 8)} stream ended`);
+            sendEvent({ type: 'end' });
+            res.end();
+        });
+
+        stream.on(TLLMEvent.Error, (err: string) => {
+            clearTimeout(timeout);
+            console.error(`[chat] ${sessionId.slice(0, 8)} stream error:`, err);
+            sendEvent({ type: 'error', message: err });
+            res.end();
+        });
     } catch (err) {
         clearTimeout(timeout);
         const errMsg = err instanceof Error ? err.message : String(err);
         console.error(`[chat] ${sessionId.slice(0, 8)} error:`, errMsg);
         sendEvent({ type: 'error', message: errMsg });
         res.end();
-    }
+
+      }
 });
 
 // DELETE /api/chat/:sessionId — clear a session
