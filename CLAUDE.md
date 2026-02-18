@@ -30,21 +30,26 @@ This is a **full-stack web application**: an Express server backed by a SmythOS 
 
 ## Key Patterns
 
-**SSE transport (server → browser):**
+**SSE streaming (server → browser):**
 ```typescript
-// server.ts: SmythOS non-streaming → SSE
-// chat.prompt().stream() emits no Content events in Express context (event ordering issue);
-// use await chat.prompt(message) and deliver the result via SSE content event.
-const response = await chat.prompt(message);
-sendEvent({ type: 'content', content: String(response) });
-sendEvent({ type: 'end' });
-res.end();
+// server.ts: SmythOS stream → SSE
+import { TLLMEvent } from '@smythos/sdk';
+
+const stream = await chat.prompt(message).stream();
+stream.on(TLLMEvent.Content, (content: string) => sendEvent({ type: 'content', content }));
+stream.on(TLLMEvent.End, () => { sendEvent({ type: 'end' }); res.end(); });
+stream.on(TLLMEvent.Error, (err: string) => { sendEvent({ type: 'error', message: err }); res.end(); });
 ```
 ```javascript
-// chat.js: reading SSE from a POST response (not EventSource)
+// chat.js: reading SSE from a POST response (not EventSource, since it's a POST)
 const reader = response.body.getReader();
 // parse `data: {...}` lines from the ReadableStream
 ```
+
+**IMPORTANT — never add a `req.on('close')` / `clientDisconnected` guard** in Express SSE routes.
+Express's `json()` middleware fully consumes the POST body before the route handler runs, which can
+fire the `'close'` event prematurely — silently dropping all `TLLMEvent.Content` events before they
+reach the browser.
 
 **Gantt JSON format:** Agent outputs a structured JSON with `project`, `groups[]`, and each group has `tasks[]`. Task IDs follow `"task-X-Y"` format. The frontend detects the ` ```gantt-json ` fence to extract it.
 
